@@ -6,7 +6,9 @@
    Brown CS142, Spring 2020
 '''
 import random
+from re import L
 import numpy as np
+from sqlalchemy import false
 
 
 def softmax(x):
@@ -54,7 +56,30 @@ class LogisticRegression:
             num_epochs: integer representing the number of epochs taken to reach convergence
         '''
         # TODO
-        pass
+        converge = False
+        epoch = 0
+        while (not converge):
+            epoch+=1
+            # shuffle examples AND labels -> so the labels are the same (both the same way)
+            shuffler = np.random.permutation(len(X))
+            X_shuffled = X[shuffler]
+            Y_shuffled = Y[shuffler]
+            for i in range(0, len(X)/self.batch_size):
+                xBatch = X_shuffled[i*self.batch_size: (i+1)*self.batch_size]
+                yBatch = Y_shuffled[i*self.batch_size: (i+1)*self.batch_size]
+                L = np.zeros(self.batch_size)
+                for x,y in zip(xBatch, yBatch):
+                    for j in range(0, self.n_classes):
+                        # gradient = np.gradient(L, self.weights, axis=0)
+                        if (y == j):
+                            L += np.matmul(softmax(np.matmul(x, self.weights[j]) - 1), x)
+                        else:
+                            L += np.matmul(softmax(np.matmul(x, self.weights[j])), x)
+                self.weights = (self.weights - ((np.matmul(self.alpha, L)) / len(X)))
+            val = self.loss(self, xBatch, yBatch)[epoch] - self.loss(self, xBatch, yBatch)[epoch-1]
+            if (val < self.conv_threshold):
+                converge = True
+                break
 
     def loss(self, X, Y):
         '''
@@ -65,8 +90,12 @@ class LogisticRegression:
         @return:
             A float number which is the average loss of the model on the dataset
         '''
-        # TODO
-        pass
+        loss=0
+        predictions = self.predict(X)
+        for i in range(0, len(X)):
+            loss += loss(predictions[i], Y[i])
+        loss = loss/len(X)
+        return loss
 
     def predict(self, X):
         '''
@@ -77,8 +106,9 @@ class LogisticRegression:
         @return:
             A 1D Numpy array with one element for each row in X containing the predicted class.
         '''
-        # TODO
-        pass
+        weights = self.weights
+        return np.matmul(X, weights)
+
 
     def accuracy(self, X, Y):
         '''
