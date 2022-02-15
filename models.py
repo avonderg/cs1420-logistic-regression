@@ -55,31 +55,38 @@ class LogisticRegression:
         @return:
             num_epochs: integer representing the number of epochs taken to reach convergence
         '''
-        # TODO
         converge = False
         epoch = 0
+        # previous = self.loss(X,Y)
+        losses = []
         while (not converge):
             epoch+=1
             # shuffle examples AND labels -> so the labels are the same (both the same way)
             shuffler = np.random.permutation(len(X))
             X_shuffled = X[shuffler]
             Y_shuffled = Y[shuffler]
-            for i in range(0, len(X)/self.batch_size):
-                xBatch = X_shuffled[i*self.batch_size: (i+1)*self.batch_size]
-                yBatch = Y_shuffled[i*self.batch_size: (i+1)*self.batch_size]
-                L = np.zeros(self.batch_size)
+            for i in range(0, len(X), self.batch_size):
+                xBatch = X_shuffled[i: i + self.batch_size]
+                yBatch = Y_shuffled[i: i + self.batch_size]
+                L = np.zeros_like(self.weights)
                 for x,y in zip(xBatch, yBatch):
-                    for j in range(0, self.n_classes):
+                    for j in range(0, self.n_classes):  
                         # gradient = np.gradient(L, self.weights, axis=0)
                         if (y == j):
-                            L += np.matmul(softmax(np.matmul(x, self.weights[j]) - 1), x)
+                            L[j] += softmax(np.matmul(self.weights, x)[j] - 1) * x
                         else:
-                            L += np.matmul(softmax(np.matmul(x, self.weights[j])), x)
-                self.weights = (self.weights - ((np.matmul(self.alpha, L)) / len(X)))
-            val = self.loss(self, xBatch, yBatch)[epoch] - self.loss(self, xBatch, yBatch)[epoch-1]
-            if (val < self.conv_threshold):
+                            L[j] += softmax(np.matmul(self.weights, x)[j]) * x
+                self.weights -= (self.alpha * L) / len(X)
+            losses.append(self.loss(X_shuffled, Y_shuffled))
+            # val = (self.loss(X_shuffled, Y_shuffled) - previous)
+            print(losses)
+            if (len(losses)>1 and abs(losses[-1]-losses[-2]) <= self.conv_threshold):
                 converge = True
-                break
+
+            # if (abs(val) < self.conv_threshold):
+            #     converge = True
+            # previous = self.loss(X_shuffled, Y_shuffled)
+        return epoch
 
     def loss(self, X, Y):
         '''
@@ -90,12 +97,17 @@ class LogisticRegression:
         @return:
             A float number which is the average loss of the model on the dataset
         '''
-        loss=0
-        predictions = self.predict(X)
-        for i in range(0, len(X)):
-            loss += loss(predictions[i], Y[i])
-        loss = loss/len(X)
-        return loss
+        # loss=0
+        # predictions = self.predict(X)
+        # for i in range(0, len(X)):
+        #     loss += loss(predictions[i], Y[i])
+        # loss = loss/len(X)
+        
+        logits = np.matmul(self.weights, np.transpose(X))
+        probabilities = np.apply_along_axis(softmax, 0, logits) #getting output of logistic regression model
+        true_probabilities = probabilities[Y, np.arange(X.shape[0])] #Y is one true probability, gives np version of extracting values
+        total_loss = np.sum(-np.log(true_probabilities))
+        return total_loss / X.shape[0]
 
     def predict(self, X):
         '''
@@ -106,8 +118,12 @@ class LogisticRegression:
         @return:
             A 1D Numpy array with one element for each row in X containing the predicted class.
         '''
-        weights = self.weights
-        return np.matmul(X, weights)
+        # weights = self.weights
+        # return np.matmul(X, weights)
+        logits = np.matmul(self.weights, np.transpose(X))
+        probabilities = np.apply_along_axis(softmax, 0, logits) #applies softmax to every row of logits
+        predictions = np.argmax(probabilities, 0) #indices where they are
+        return predictions #return index, ie, which class
 
 
     def accuracy(self, X, Y):
@@ -120,5 +136,5 @@ class LogisticRegression:
         @return:
             a float number indicating accuracy (between 0 and 1)
         '''
-        # TODO
-        pass
+        predictions = self.predict(X)
+        return np.mean(predictions == Y) #ratio of number of correct matches

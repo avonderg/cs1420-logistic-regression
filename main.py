@@ -31,8 +31,8 @@ DATA_FILE_NAME = 'normalized_data.csv'
 CENSUS_FILE_PATH = ROOT_DIR_PREFIX + DATA_FILE_NAME
 
 NUM_CLASSES = 3
-BATCH_SIZE = 1  #tune this parameter
-CONV_THRESHOLD = 1 #tune this parameter
+BATCH_SIZE = 60  #tune this parameter
+CONV_THRESHOLD = 0.001 #tune this parameter
 
 def import_census(file_path):
     '''
