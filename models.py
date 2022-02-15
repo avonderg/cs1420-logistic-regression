@@ -57,7 +57,6 @@ class LogisticRegression:
         '''
         converge = False
         epoch = 0
-        # previous = self.loss(X,Y)
         losses = []
         while (not converge):
             epoch+=1
@@ -71,21 +70,14 @@ class LogisticRegression:
                 L = np.zeros_like(self.weights)
                 for x,y in zip(xBatch, yBatch):
                     for j in range(0, self.n_classes):  
-                        # gradient = np.gradient(L, self.weights, axis=0)
                         if (y == j):
-                            L[j] += softmax(np.matmul(self.weights, x)[j] - 1) * x
+                            L[j] += (softmax(np.matmul(self.weights,x))[j] - 1) * x
                         else:
-                            L[j] += softmax(np.matmul(self.weights, x)[j]) * x
-                self.weights -= (self.alpha * L) / len(X)
+                            L[j] += (softmax(np.matmul(self.weights,x))[j]) * x
+                self.weights -= self.alpha * L / len(xBatch)
             losses.append(self.loss(X_shuffled, Y_shuffled))
-            # val = (self.loss(X_shuffled, Y_shuffled) - previous)
-            print(losses)
             if (len(losses)>1 and abs(losses[-1]-losses[-2]) <= self.conv_threshold):
                 converge = True
-
-            # if (abs(val) < self.conv_threshold):
-            #     converge = True
-            # previous = self.loss(X_shuffled, Y_shuffled)
         return epoch
 
     def loss(self, X, Y):
@@ -97,12 +89,6 @@ class LogisticRegression:
         @return:
             A float number which is the average loss of the model on the dataset
         '''
-        # loss=0
-        # predictions = self.predict(X)
-        # for i in range(0, len(X)):
-        #     loss += loss(predictions[i], Y[i])
-        # loss = loss/len(X)
-        
         logits = np.matmul(self.weights, np.transpose(X))
         probabilities = np.apply_along_axis(softmax, 0, logits) #getting output of logistic regression model
         true_probabilities = probabilities[Y, np.arange(X.shape[0])] #Y is one true probability, gives np version of extracting values
@@ -118,8 +104,6 @@ class LogisticRegression:
         @return:
             A 1D Numpy array with one element for each row in X containing the predicted class.
         '''
-        # weights = self.weights
-        # return np.matmul(X, weights)
         logits = np.matmul(self.weights, np.transpose(X))
         probabilities = np.apply_along_axis(softmax, 0, logits) #applies softmax to every row of logits
         predictions = np.argmax(probabilities, 0) #indices where they are
